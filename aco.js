@@ -1,4 +1,4 @@
-const ANT_COUNT = 100;
+const ANT_COUNT = 2000;
 const POINT_COUNT = 9;
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
@@ -10,6 +10,7 @@ const generatePoints = (count) => {
       x: Math.round(Math.random() * canvas.width),
       y: Math.round(Math.random() * canvas.height),
       id: i,
+      enjoyment: Math.round(Math.random() * 100),
     });
   }
 
@@ -18,6 +19,14 @@ const generatePoints = (count) => {
 
 const distance = (a, b) => {
   return Math.sqrt(Math.pow(a.x - b.x, 2) + Math.pow(a.y - b.y, 2));
+};
+
+const pathDistance = (path) => {
+  let sum = 0;
+  for (let i = 0; i < path.length - 1; i++) {
+    sum += distance(path[i], path[i + 1]);
+  }
+  return sum;
 };
 
 const points = generatePoints(POINT_COUNT);
@@ -57,9 +66,11 @@ const getPath = ({ startX, startY, startId, points }) => {
           point,
           probability:
             //use reward matrix along with distance to calculate probability
-            ((((1 / distance({ x: startX, y: startY }, point)) *
+            (((1 / distance({ x: startX, y: startY }, point)) *
               rewardMatrix[startId][point.id]) /
-              sum) / 100) * 100,
+              sum /
+              100) *
+            100,
         };
       }
       return { point, probability: 0 };
@@ -151,11 +162,7 @@ for (let i = 0; i < ANT_COUNT; i++) {
 
 //get the path distance for each ant
 const pathDistances = ants.map((ant) => {
-  let sum = 0;
-  for (let i = 0; i < ant.length - 1; i++) {
-    sum += distance(ant[i], ant[i + 1]);
-  }
-  return sum;
+  return Math.round(pathDistance(ant) * 100) / 100;
 });
 
 //get the shortest path
@@ -164,7 +171,44 @@ console.log(shortestPath);
 
 draw(shortestPath);
 
-const worstPath = ants[pathDistances.indexOf(Math.max(...pathDistances))];
-console.log(worstPath);
+// const worstPath = ants[pathDistances.indexOf(Math.max(...pathDistances))];
+// console.log(worstPath);
+
+//add the distaces from the points and display
+// console.log(pathDistances);
 
 // draw(worstPath);
+
+let path_distance = 1000;
+
+//since the use has limited path length, we need to find the best path using knapsack
+//we will use the enjoyment as the value and the distance as the weight
+//function should return a cut down path
+//we will use the recursive formula
+
+const knapsack = (capacity, path = []) => {
+  //base case
+  if (capacity <= 0 || path.length == 0) {
+    return path;
+  }
+
+  //if the last element is greater than the capacity, ignore it and remove it from the path
+  if (path[path.length - 1].distance > capacity) {
+    return knapsack(capacity, path.slice(0, path.length - 1));
+  }
+
+  //else return the max of the two cases
+  const path1 = knapsack(
+    capacity - path[path.length - 1].distance,
+    path.slice(0, path.length - 1)
+  );
+  const path2 = knapsack(capacity, path.slice(0, path.length - 1));
+
+  if (pathDistance(path1) > pathDistance(path2)) {
+    return path1;
+  }
+  return path2;
+};
+
+console.log(pathDistance(shortestPath));
+console.log(knapsack(1000, shortestPath));
