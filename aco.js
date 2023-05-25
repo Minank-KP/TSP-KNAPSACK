@@ -273,9 +273,24 @@ start.addEventListener("click", () => {
   const shortestPathDiv = document.createElement("div");
   shortestPathDiv.innerHTML = `Shortest Path: ${shortestPath
     .map((point) => point.id)
-    .join(" - ")}`;
+    .join(" - ")} <br> Distance: ${pathDistance(shortestPath)}`;
   resdiv.appendChild(shortestPathDiv);
   document.body.appendChild(resdiv);
+
+  // now apply knapsack to the shortest path
+  const capacity = slider.value;
+  const shortestPathKnapsack = knapsack(capacity, shortestPath);
+  console.log(shortestPathKnapsack);
+  draw(shortestPathKnapsack);
+
+  //print shortest path as 3 - 1 - 2
+  const shortestPathKnapsackDiv = document.createElement("div");
+  shortestPathKnapsackDiv.innerHTML = `Shortest Path after knapsack: ${shortestPathKnapsack
+    .map((point) => point.id)
+    .join(" - ")} <br> Distance: ${pathDistance(shortestPathKnapsack)}`;
+  resdiv.appendChild(shortestPathKnapsackDiv);
+  document.body.appendChild(resdiv);
+
 });
 
 //get points from user click on canvas
