@@ -1,7 +1,12 @@
-const ANT_COUNT = 2000;
-const POINT_COUNT = 9;
+const ANT_COUNT = 10000;
+const POINT_COUNT = 5;
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+
+document.onload = () => {
+  canvas.width = ctx.clientWidth;
+  canvas.height = ctx.clientHeight;
+};
 
 const generatePoints = (count) => {
   const points = [];
@@ -103,10 +108,12 @@ const getPath = ({ startX, startY, startId, points }) => {
 
 //plot on the canvas
 
+
 function draw(path) {
   //   ctx.fillStyle = "white";
   //   ctx.fillRect(0, 0, canvas.width, canvas.height);
   //get a random color
+  
   const color = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
   ctx.fillStyle = color;
   ctx.strokeStyle = color;
@@ -179,36 +186,54 @@ draw(shortestPath);
 
 // draw(worstPath);
 
-let path_distance = 1000;
+// let path_distance = 1000;
 
 //since the use has limited path length, we need to find the best path using knapsack
 //we will use the enjoyment as the value and the distance as the weight
 //function should return a cut down path
 //we will use the recursive formula
 
-const knapsack = (capacity, path = []) => {
+const knapsack = (capacity, path, res = [], index = 0) => {
   //base case
-  if (capacity <= 0 || path.length == 0) {
-    return path;
+  if (index >= path.length) {
+    return res;
   }
 
-  //if the last element is greater than the capacity, ignore it and remove it from the path
-  if (path[path.length - 1].distance > capacity) {
-    return knapsack(capacity, path.slice(0, path.length - 1));
+  //if the weight is greater than the capacity, we will not include it
+  if (pathDistance(res) > capacity) {
+    return res;
   }
 
-  //else return the max of the two cases
-  const path1 = knapsack(
-    capacity - path[path.length - 1].distance,
-    path.slice(0, path.length - 1)
-  );
-  const path2 = knapsack(capacity, path.slice(0, path.length - 1));
-
-  if (pathDistance(path1) > pathDistance(path2)) {
-    return path1;
+  //if the weight is less than the capacity, we will include it
+  const lastPoint = res[res.length - 1];
+  const currentPoint = path[index];
+  if (lastPoint) {
+    if (distance(lastPoint, currentPoint) <= capacity) {
+      res.push(currentPoint);
+    } else {
+      index++;
+    }
+  } else {
+    res.push(currentPoint);
   }
-  return path2;
+
+  return knapsack(capacity, path, res, index + 1);
 };
 
-console.log(pathDistance(shortestPath));
-console.log(knapsack(1000, shortestPath));
+//slider for time
+const slider = document.getElementById("time");
+const time = document.getElementsByClassName("time-value");
+slider.oninput = function () {
+  time[0].innerHTML = `Time: ${this.value}`;
+};
+
+const start = document.getElementById("start");
+start.onclick = function () {
+  //get the path
+  const path = knapsack(slider.value, shortestPath);
+  console.log(path);
+  draw(path);
+}
+
+
+
