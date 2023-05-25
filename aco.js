@@ -1,5 +1,3 @@
-const ANT_COUNT = 10000;
-const POINT_COUNT = 5;
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
@@ -34,36 +32,30 @@ const pathDistance = (path) => {
   return sum;
 };
 
-const points = generatePoints(POINT_COUNT);
-
+let points = [];
 const rewardMatrix = [];
-for (let i = 0; i < points.length; i++) {
-  rewardMatrix[i] = [];
-  for (let j = 0; j < points.length; j++) {
-    rewardMatrix[i][j] = 1;
-  }
-}
 
 const getPath = ({ startX, startY, startId, points }) => {
+  // console.log(startX, startY, startId, points);
   //get sum of distances from start to any other point
   const path = [];
-  // console.log(rewardMatrix)
+  // console.log(rewardMatrix);
 
   //initialise reward matrix
-  while (points.length > 1) {
-    const sum = points.reduce((acc, point) => {
+  while (points.length > 0) {
+    // console.log(points);
+    let sum = 0;
+    points.forEach((point) => {
       if (point.id != startId) {
-        //add reward matrix to the distance
-        return (
-          acc +
+        //add reward matrix value to sum
+        sum +=
           (1 / distance({ x: startX, y: startY }, point)) *
-            rewardMatrix[startId][point.id]
-        );
+          rewardMatrix[startId][point.id];
       }
-      return acc;
-    }, 0);
+    });
 
     // console.log(sum);
+
     //get probability of choosing any other point
     const probability = points.map((point) => {
       if (point.id != startId) {
@@ -81,9 +73,12 @@ const getPath = ({ startX, startY, startId, points }) => {
       return { point, probability: 0 };
     });
 
+    // console.log(probability);
+
     let cumulativeProbability = 0;
     const cumulativeProbabilities = probability.map((prob) => {
       cumulativeProbability += prob.probability;
+      // if (cumulativeProbability > 100) cumulativeProbability = 100;
       return { point: prob.point, cumulativeProbability };
     });
 
@@ -97,7 +92,9 @@ const getPath = ({ startX, startY, startId, points }) => {
     }).point;
 
     points = points.filter((point) => point.id != chosenPoint.id);
-
+    startX = chosenPoint.x;
+    startY = chosenPoint.y;
+    startId = chosenPoint.id;
     path.push(chosenPoint);
   }
 
@@ -108,12 +105,14 @@ const getPath = ({ startX, startY, startId, points }) => {
 
 //plot on the canvas
 
-
 function draw(path) {
   //   ctx.fillStyle = "white";
   //   ctx.fillRect(0, 0, canvas.width, canvas.height);
   //get a random color
-  
+
+  //clear the canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
   const color = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
   ctx.fillStyle = color;
   ctx.strokeStyle = color;
@@ -143,40 +142,50 @@ function draw(path) {
 // draw(path);
 
 //get a path for each ant
+
 const ants = [];
-for (let i = 0; i < ANT_COUNT; i++) {
-  //start at a random point
-  const start = points[Math.floor(Math.random() * points.length)];
-  const path = getPath({
-    startX: start.x,
-    startY: start.y,
-    startId: start.id,
-    points,
-  });
-  path.push(start);
-  ants.push(path);
-  //   console.log(path);
-  //update reward matrix
-  for (let i = 0; i < path.length - 1; i++) {
-    rewardMatrix[path[i].id][path[i + 1].id] +=
-      Math.round((1 / distance(path[i], path[i + 1])) * 100) / 100;
-    rewardMatrix[path[i + 1].id][path[i].id] +=
-      Math.round((1 / distance(path[i], path[i + 1])) * 100) / 100;
+
+const calculate = (antCount) => {
+  for (let i = 0; i < antCount; i++) {
+    //start at a random point
+    const start = points[Math.floor(Math.random() * points.length)];
+    //remove the start point from the points array
+    // points = points.filter((point) => point.id != start.id);
+    const path = getPath({
+      startX: start.x,
+      startY: start.y,
+      startId: start.id,
+      points,
+    });
+    //add the start point to the path
+    // console.log("start", start);
+
+    ants.push(path);
+    // console.log(path);
+    //update reward matrix
+    for (let i = 0; i < path.length - 1; i++) {
+      rewardMatrix[path[i].id][path[i + 1].id] +=
+        Math.round((1 / distance(path[i], path[i + 1])) * 100) / 100;
+      rewardMatrix[path[i + 1].id][path[i].id] +=
+        Math.round((1 / distance(path[i], path[i + 1])) * 100) / 100;
+    }
+
+    // console.table(rewardMatrix);
   }
-}
+};
 
 // console.table(rewardMatrix);
 
 //get the path distance for each ant
-const pathDistances = ants.map((ant) => {
-  return Math.round(pathDistance(ant) * 100) / 100;
-});
+// const pathDistances = ants.map((ant) => {
+//   return Math.round(pathDistance(ant) * 100) / 100;
+// });
 
 //get the shortest path
-const shortestPath = ants[pathDistances.indexOf(Math.min(...pathDistances))];
-console.log(shortestPath);
+// const shortestPath = ants[pathDistances.indexOf(Math.min(...pathDistances))];
+// console.log(shortestPath);
 
-draw(shortestPath);
+// draw(shortestPath);
 
 // const worstPath = ants[pathDistances.indexOf(Math.max(...pathDistances))];
 // console.log(worstPath);
@@ -223,17 +232,83 @@ const knapsack = (capacity, path, res = [], index = 0) => {
 //slider for time
 const slider = document.getElementById("time");
 const time = document.getElementsByClassName("time-value");
+const antCount = document.getElementById("ants");
 slider.oninput = function () {
   time[0].innerHTML = `Time: ${this.value}`;
 };
 
 const start = document.getElementById("start");
-start.onclick = function () {
-  //get the path
-  const path = knapsack(slider.value, shortestPath);
-  console.log(path);
-  draw(path);
-}
 
+start.addEventListener("click", () => {
+  //initialise reward matrix
+  for (let i = 0; i < points.length; i++) {
+    rewardMatrix[i] = [];
+    for (let j = 0; j < points.length; j++) {
+      rewardMatrix[i][j] = 1;
+    }
+  }
 
+  //get a path for each ant
+  console.log(antCount.value);
+  calculate(antCount.value);
+  // console.log(ants);
 
+  //display the 3 best paths on the canvas
+  // make a new canvas
+
+  const resdiv = document.createElement("div");
+  resdiv.classList.add("result");
+  //top 3 paths
+
+  //sort the ants
+
+  // console.log(ants);
+
+  for (let i = 0; i < antCount; i++) {
+    const ant = ants[i];
+    const div = document.createElement("div");
+    let str = "";
+    ant.forEach((point) => {
+      str += point.id + "->";
+    });
+
+    div.innerHTML = str;
+    resdiv.appendChild(div);
+  }
+
+  //get the path distance for each ant
+  const pathDistances = ants.map((ant) => {
+    return Math.round(pathDistance(ant) * 100) / 100;
+  });
+
+  const shortestPath = ants[pathDistances.indexOf(Math.min(...pathDistances))];
+
+  draw(shortestPath);
+
+  document.body.appendChild(resdiv);
+});
+
+//get points from user click on canvas
+canvas.addEventListener("click", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = Math.round(e.clientY - rect.top);
+  console.log(x, y);
+
+  //mark the point on the canvas
+  ctx.beginPath();
+  ctx.arc(x, y, 3, 0, 2 * Math.PI);
+  ctx.fill();
+  ctx.moveTo(x, y);
+  ctx.font = "10px Arial";
+  ctx.fillStyle = "black";
+  ctx.fillText(points.length, x + 5, y + 5);
+  ctx.fill();
+  ctx.moveTo(x, y);
+  points.push({
+    x,
+    y,
+    id: points.length,
+    enjoyment: Math.floor(Math.random() * 10) + 1,
+  });
+});
