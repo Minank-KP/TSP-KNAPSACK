@@ -111,7 +111,7 @@ function draw(path) {
   //get a random color
 
   //clear the canvas
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   const color = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
   ctx.fillStyle = color;
@@ -174,34 +174,6 @@ const calculate = (antCount) => {
   }
 };
 
-// console.table(rewardMatrix);
-
-//get the path distance for each ant
-// const pathDistances = ants.map((ant) => {
-//   return Math.round(pathDistance(ant) * 100) / 100;
-// });
-
-//get the shortest path
-// const shortestPath = ants[pathDistances.indexOf(Math.min(...pathDistances))];
-// console.log(shortestPath);
-
-// draw(shortestPath);
-
-// const worstPath = ants[pathDistances.indexOf(Math.max(...pathDistances))];
-// console.log(worstPath);
-
-//add the distaces from the points and display
-// console.log(pathDistances);
-
-// draw(worstPath);
-
-// let path_distance = 1000;
-
-//since the use has limited path length, we need to find the best path using knapsack
-//we will use the enjoyment as the value and the distance as the weight
-//function should return a cut down path
-//we will use the recursive formula
-
 const knapsack = (capacity, path, res = [], index = 0) => {
   //base case
   if (index >= path.length) {
@@ -262,29 +234,47 @@ start.addEventListener("click", () => {
 
   //sort the ants
 
-  // console.log(ants);
-
-  for (let i = 0; i < antCount; i++) {
-    const ant = ants[i];
-    const div = document.createElement("div");
-    let str = "";
-    ant.forEach((point) => {
-      str += point.id + "->";
-    });
-
-    div.innerHTML = str;
-    resdiv.appendChild(div);
-  }
-
   //get the path distance for each ant
   const pathDistances = ants.map((ant) => {
     return Math.round(pathDistance(ant) * 100) / 100;
   });
 
   const shortestPath = ants[pathDistances.indexOf(Math.min(...pathDistances))];
+  const secondShortestPath =
+    ants[
+      pathDistances.indexOf(
+        Math.min(
+          ...pathDistances.filter((dist) => dist != Math.min(...pathDistances))
+        )
+      )
+    ];
+  const thirdShortestPath =
+    ants[
+      pathDistances.indexOf(
+        Math.min(
+          ...pathDistances.filter(
+            (dist) =>
+              dist != Math.min(...pathDistances) &&
+              dist !=
+                Math.min(
+                  ...pathDistances.filter(
+                    (dist) => dist != Math.min(...pathDistances)
+                  )
+                )
+          )
+        )
+      )
+    ];
 
+  // draw(secondShortestPath);
   draw(shortestPath);
 
+  //print shortest path as 3 - 1 - 2
+  const shortestPathDiv = document.createElement("div");
+  shortestPathDiv.innerHTML = `Shortest Path: ${shortestPath
+    .map((point) => point.id)
+    .join(" - ")}`;
+  resdiv.appendChild(shortestPathDiv);
   document.body.appendChild(resdiv);
 });
 
