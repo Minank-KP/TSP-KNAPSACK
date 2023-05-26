@@ -6,26 +6,37 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
     <style>
-        canvas {
-        border: 1px solid black;
-
-        }
+      body {
+        margin: 20px;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 15pt;
+      }
+      canvas {
+        border: 2px solid black;
+      }
     </style>
   </head>
   <body>
     <h1>Travelling Salesman Problem</h1>
 
-    <canvas
-    id="canvas"
-    width="600"
-    height="400"
-    > </canvas>
+    <canvas id="canvas" width="800" height="534"> </canvas>
+    <hr />
     <div class="time-value">
-    <span>Time: </span>
+      <span>Time spent at each node: </span>
     </div>
-    <input type="range" name="time" id="time" min="1" max="1000">
-    <input type="number" name="ants" id="ants">
+    <input
+      type="range"
+      name="time"
+      id="time"
+      style="width: 300px"
+      min="1"
+      max="1000"
+    />
+    <input type="number" name="ants" id="ants" />
     <button id="start">Start</button>
+    <button id="clear">Clear Canvas</button>
+    <hr />
+    <h3>Result :</h3>
     <script src="aco.js"></script>
   </body>
 </html>

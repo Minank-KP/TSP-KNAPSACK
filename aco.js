@@ -206,12 +206,28 @@ const slider = document.getElementById("time");
 const time = document.getElementsByClassName("time-value");
 const antCount = document.getElementById("ants");
 slider.oninput = function () {
-  time[0].innerHTML = `Time: ${this.value}`;
+  time[0].innerHTML = `Time spent at each node: ${this.value}`;
 };
 
 const start = document.getElementById("start");
 
+let isPathDrawn = false;
+
 start.addEventListener("click", () => {
+  if (isPathDrawn) {
+    alert(
+      "A path is already drawn. Please clear the canvas to draw a new path."
+    );
+    return;
+  }
+
+  const antCountValue = parseInt(antCount.value);
+
+  if (isNaN(antCountValue)) {
+    alert("Please enter a valid number for the ant count.");
+    return;
+  }
+
   //initialise reward matrix
   for (let i = 0; i < points.length; i++) {
     rewardMatrix[i] = [];
@@ -268,9 +284,15 @@ start.addEventListener("click", () => {
 
   // draw(secondShortestPath);
   draw(shortestPath);
+  isPathDrawn = true;
 
   //print shortest path as 3 - 1 - 2
   const shortestPathDiv = document.createElement("div");
+  shortestPathDiv.setAttribute(
+    "style",
+    "color: black; font-size: 20px; font-family: Helvetica;"
+  );
+
   shortestPathDiv.innerHTML = `Shortest Path: ${shortestPath
     .map((point) => point.id)
     .join(" - ")} <br> Distance: ${pathDistance(shortestPath)}`;
@@ -285,35 +307,71 @@ start.addEventListener("click", () => {
 
   //print shortest path as 3 - 1 - 2
   const shortestPathKnapsackDiv = document.createElement("div");
+  shortestPathKnapsackDiv.setAttribute(
+    "style",
+    "color: black; font-size: 20px; font-family: Helvetica;"
+  );
   shortestPathKnapsackDiv.innerHTML = `Shortest Path after knapsack: ${shortestPathKnapsack
     .map((point) => point.id)
     .join(" - ")} <br> Distance: ${pathDistance(shortestPathKnapsack)}`;
   resdiv.appendChild(shortestPathKnapsackDiv);
   document.body.appendChild(resdiv);
 
+  const hr = document.createElement("hr");
+  hr.id = "hr";
+  hr.style.width = "100%";
+  hr.style.margin = "10px";
+  document.body.appendChild(hr);
 });
 
-//get points from user click on canvas
+//get points from user click on canvas, alerts user and avoids insertion of duplicate points
 canvas.addEventListener("click", (e) => {
   const rect = canvas.getBoundingClientRect();
   const x = e.clientX - rect.left;
   const y = Math.round(e.clientY - rect.top);
-  console.log(x, y);
 
-  //mark the point on the canvas
+  // Check if a point with the same coordinates already exists
+  const duplicatePoint = points.find((point) => point.x === x && point.y === y);
+  if (duplicatePoint) {
+    alert("A point with the same coordinates already exists.");
+    return;
+  }
+
+  // Mark the point on the canvas
   ctx.beginPath();
-  ctx.arc(x, y, 3, 0, 2 * Math.PI);
+  ctx.arc(x, y, 4, 0, 2 * Math.PI);
   ctx.fill();
   ctx.moveTo(x, y);
   ctx.font = "10px Arial";
   ctx.fillStyle = "black";
-  ctx.fillText(points.length, x + 5, y + 5);
+  ctx.fillText(points.length, x + 6, y + 6);
   ctx.fill();
   ctx.moveTo(x, y);
-  points.push({
+
+  const newPoint = {
     x,
     y,
     id: points.length,
     enjoyment: Math.floor(Math.random() * 10) + 1,
+  };
+
+  points.push(newPoint);
+
+  // Update the reward matrix without duplicating entries
+  rewardMatrix.forEach((row) => {
+    row.push(1);
   });
+  rewardMatrix.push(new Array(points.length).fill(1));
+  console.log(x, y);
 });
+
+const clearButton = document.getElementById("clear");
+clearButton.addEventListener("click", clearCanvas);
+
+function clearCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  points = [];
+  rewardMatrix.length = 0;
+  ants.length = 0;
+  isPathDrawn = false;
+}
