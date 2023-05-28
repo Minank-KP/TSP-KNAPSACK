@@ -113,22 +113,25 @@ function draw(path) {
   //clear the canvas
   // ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  const color = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+  //generate dark colors
+  const color = `rgb(${Math.round(Math.random() * 100)},${Math.round(
+    Math.random() * 100
+  )},${Math.round(Math.random() * 100)})`;
+
   ctx.fillStyle = color;
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(path[0].x, path[0].y);
-  path.forEach((point) => {
+  path.forEach((point, idx) => {
     ctx.lineTo(point.x, point.y);
     ctx.stroke();
     ctx.beginPath();
-    ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI);
-    //write the id of the point
-    ctx.font = "10px Arial";
-    ctx.fillStyle = "black";
-    ctx.fillText(point.id, point.x + 5, point.y + 5);
-    ctx.fill();
+    // ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI);
+    // ctx.stroke();
+    // ctx.font = "20px Arial";
+    // ctx.fillText(idx, point.x + 5, point.y - 5);
+    // ctx.fill();
     ctx.moveTo(point.x, point.y);
   });
   ctx.lineTo(path[0].x, path[0].y);
@@ -180,17 +183,21 @@ const knapsack = (capacity, path, res = [], index = 0) => {
     return res;
   }
 
+  console.log("checking" + index);
+
   //if the weight is greater than the capacity, we will not include it
-  if (pathDistance(res) > capacity) {
-    return res;
-  }
+  // if (pathDistance(res) > capacity) {
+  //   return res;
+  // }
 
   //if the weight is less than the capacity, we will include it
   const lastPoint = res[res.length - 1];
   const currentPoint = path[index];
+  let cost = 0;
   if (lastPoint) {
     if (distance(lastPoint, currentPoint) <= capacity) {
       res.push(currentPoint);
+      cost = distance(lastPoint, currentPoint);
     } else {
       index++;
     }
@@ -198,7 +205,7 @@ const knapsack = (capacity, path, res = [], index = 0) => {
     res.push(currentPoint);
   }
 
-  return knapsack(capacity, path, res, index + 1);
+  return knapsack(capacity - cost, path, res, index + 1);
 };
 
 //slider for time
@@ -210,22 +217,19 @@ slider.oninput = function () {
 };
 
 const start = document.getElementById("start");
-
 let isPathDrawn = false;
 
+let shortestPath = [];
+let secondShortestPath = [];
+let thirdShortestPath = [];
+
 start.addEventListener("click", () => {
-  if (isPathDrawn) {
-    alert(
-      "A path is already drawn. Please clear the canvas to draw a new path."
-    );
-    return;
-  }
+  // ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   const antCountValue = parseInt(antCount.value);
 
   if (isNaN(antCountValue)) {
-    alert("Please enter a valid number for the ant count.");
-    return;
+    antCount.value = 100;
   }
 
   //initialise reward matrix
@@ -255,8 +259,8 @@ start.addEventListener("click", () => {
     return Math.round(pathDistance(ant) * 100) / 100;
   });
 
-  const shortestPath = ants[pathDistances.indexOf(Math.min(...pathDistances))];
-  const secondShortestPath =
+  shortestPath = ants[pathDistances.indexOf(Math.min(...pathDistances))];
+  secondShortestPath =
     ants[
       pathDistances.indexOf(
         Math.min(
@@ -264,7 +268,7 @@ start.addEventListener("click", () => {
         )
       )
     ];
-  const thirdShortestPath =
+  thirdShortestPath =
     ants[
       pathDistances.indexOf(
         Math.min(
@@ -284,44 +288,24 @@ start.addEventListener("click", () => {
 
   // draw(secondShortestPath);
   draw(shortestPath);
-  isPathDrawn = true;
-
-  //print shortest path as 3 - 1 - 2
+  //add shortest path , second shortest path and third shortest path to the result div
+  //clear result div
+  resdiv.innerHTML = "";
   const shortestPathDiv = document.createElement("div");
-  shortestPathDiv.setAttribute(
-    "style",
-    "color: black; font-size: 20px; font-family: Helvetica;"
-  );
-
-  shortestPathDiv.innerHTML = `Shortest Path: ${shortestPath
+  shortestPathDiv.classList.add("shortest-path");
+  shortestPathDiv.innerHTML = `Shortest path: ${shortestPath
     .map((point) => point.id)
-    .join(" - ")} <br> Distance: ${pathDistance(shortestPath)}`;
+    .join("->")}  (${Math.round(pathDistance(shortestPath) * 100) / 100})`;
   resdiv.appendChild(shortestPathDiv);
-  document.body.appendChild(resdiv);
 
-  // now apply knapsack to the shortest path
-  const capacity = slider.value;
-  const shortestPathKnapsack = knapsack(capacity, shortestPath);
-  console.log(shortestPathKnapsack);
-  draw(shortestPathKnapsack);
-
-  //print shortest path as 3 - 1 - 2
-  const shortestPathKnapsackDiv = document.createElement("div");
-  shortestPathKnapsackDiv.setAttribute(
-    "style",
-    "color: black; font-size: 20px; font-family: Helvetica;"
-  );
-  shortestPathKnapsackDiv.innerHTML = `Shortest Path after knapsack: ${shortestPathKnapsack
+  const secondShortestPathDiv = document.createElement("div");
+  secondShortestPathDiv.classList.add("shortest-path");
+  secondShortestPathDiv.innerHTML = `Second shortest path: ${secondShortestPath
     .map((point) => point.id)
-    .join(" - ")} <br> Distance: ${pathDistance(shortestPathKnapsack)}`;
-  resdiv.appendChild(shortestPathKnapsackDiv);
-  document.body.appendChild(resdiv);
+    .join("->")}`;
 
-  const hr = document.createElement("hr");
-  hr.id = "hr";
-  hr.style.width = "100%";
-  hr.style.margin = "10px";
-  document.body.appendChild(hr);
+  resdiv.appendChild(secondShortestPathDiv);
+  document.body.appendChild(resdiv);
 });
 
 //get points from user click on canvas, alerts user and avoids insertion of duplicate points
@@ -337,22 +321,20 @@ canvas.addEventListener("click", (e) => {
     return;
   }
 
-  // Mark the point on the canvas
+  // Mark the point on the canvas and put digit inside
   ctx.beginPath();
-  ctx.arc(x, y, 4, 0, 2 * Math.PI);
-  ctx.fill();
-  ctx.moveTo(x, y);
-  ctx.font = "10px Arial";
-  ctx.fillStyle = "black";
-  ctx.fillText(points.length, x + 6, y + 6);
-  ctx.fill();
-  ctx.moveTo(x, y);
+  ctx.arc(x, y, 20, 0, 2 * Math.PI);
+  ctx.stroke();
+  ctx.font = "20px Arial";
+  ctx.fillText(points.length, x - 5, y + 5);
+
+  // Add the point to the points array
 
   const newPoint = {
     x,
     y,
     id: points.length,
-    enjoyment: Math.floor(Math.random() * 10) + 1,
+    enjoyment: Math.floor(Math.random() * 100) + 1,
   };
 
   points.push(newPoint);
@@ -362,11 +344,31 @@ canvas.addEventListener("click", (e) => {
     row.push(1);
   });
   rewardMatrix.push(new Array(points.length).fill(1));
-  console.log(x, y);
+  console.log(points);
 });
 
 const clearButton = document.getElementById("clear");
 clearButton.addEventListener("click", clearCanvas);
+
+const rotate = (path) => {
+  const index = path.findIndex((point) => point.id === 0);
+  const firstPart = path.slice(0, index);
+  const secondPart = path.slice(index);
+  return secondPart.concat(firstPart);
+};
+const findButton = document.getElementById("find");
+const final = document.createElement("div");
+final.classList.add("final");
+findButton.addEventListener("click", () => {
+  //rotate the path such that point with id 0 is the first point
+  shortestPath = rotate(shortestPath);
+  const path = knapsack(slider.value, shortestPath);
+  console.log(path);
+  draw(path);
+
+  final.innerHTML = `Final path: ${path.map((point) => point.id).join("->")}`;
+  document.body.appendChild(final);
+});
 
 function clearCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
