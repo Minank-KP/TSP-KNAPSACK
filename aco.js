@@ -29,7 +29,8 @@ const pathDistance = (path) => {
   for (let i = 0; i < path.length - 1; i++) {
     sum += distance(path[i], path[i + 1]);
   }
-  return sum;
+  // return sum in 0 - 100 scale
+  return Math.round((sum / (canvas.width + canvas.height)) * 100);
 };
 
 let points = [];
@@ -105,7 +106,7 @@ const getPath = ({ startX, startY, startId, points }) => {
 
 //plot on the canvas
 
-function draw(path) {
+function draw(path, c = "gray") {
   //   ctx.fillStyle = "white";
   //   ctx.fillRect(0, 0, canvas.width, canvas.height);
   //get a random color
@@ -114,9 +115,7 @@ function draw(path) {
   // ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   //generate dark colors
-  const color = `rgb(${Math.round(Math.random() * 100)},${Math.round(
-    Math.random() * 100
-  )},${Math.round(Math.random() * 100)})`;
+  const color = c;
 
   ctx.fillStyle = color;
   ctx.strokeStyle = color;
@@ -127,14 +126,11 @@ function draw(path) {
     ctx.lineTo(point.x, point.y);
     ctx.stroke();
     ctx.beginPath();
-    // ctx.arc(point.x, point.y, 3, 0, 2 * Math.PI);
-    // ctx.stroke();
-    // ctx.font = "20px Arial";
-    // ctx.fillText(idx, point.x + 5, point.y - 5);
-    // ctx.fill();
+
     ctx.moveTo(point.x, point.y);
   });
-  ctx.lineTo(path[0].x, path[0].y);
+  ctx.lineTo(path[0].x, path[0].y); 
+
   ctx.stroke();
   ctx.beginPath();
   ctx.arc(path[0].x, path[0].y, 3, 0, 2 * Math.PI);
@@ -193,13 +189,14 @@ const knapsack = (capacity, path, res = [], index = 0) => {
   //if the weight is less than the capacity, we will include it
   const lastPoint = res[res.length - 1];
   const currentPoint = path[index];
+
   let cost = 0;
   if (lastPoint) {
+    console.log(distance(lastPoint, currentPoint));
     if (distance(lastPoint, currentPoint) <= capacity) {
+      cost = distance(lastPoint, currentPoint)  + currentPoint.time_spent;
       res.push(currentPoint);
-      cost = distance(lastPoint, currentPoint);
-    } else {
-      index++;
+      
     }
   } else {
     res.push(currentPoint);
@@ -213,7 +210,7 @@ const slider = document.getElementById("time");
 const time = document.getElementsByClassName("time-value");
 const antCount = document.getElementById("ants");
 slider.oninput = function () {
-  time[0].innerHTML = `Time spent at each node: ${this.value}`;
+  time[0].innerHTML = `Total time available : ${this.value} hrs`;
 };
 
 const start = document.getElementById("start");
@@ -335,7 +332,16 @@ canvas.addEventListener("click", (e) => {
     y,
     id: points.length,
     enjoyment: Math.floor(Math.random() * 100) + 1,
+    time_spent: Math.floor(Math.random() * 10) + 1,
   };
+
+  //draw enjoyment
+  ctx.font = "20px Arial";
+  ctx.fillText(
+    `E: ${newPoint.enjoyment} , T: ${newPoint.time_spent}`,
+    x - 5,
+    y - 25
+  );
 
   points.push(newPoint);
 
@@ -364,9 +370,11 @@ findButton.addEventListener("click", () => {
   shortestPath = rotate(shortestPath);
   const path = knapsack(slider.value, shortestPath);
   console.log(path);
-  draw(path);
+  draw(path, "red");
 
-  final.innerHTML = `Final path: ${path.map((point) => point.id).join("->")}`;
+  final.innerHTML = `Final path: ${path.map((point) => point.id).join("->")} (${
+    Math.round(pathDistance(path) * 100) / 100
+  } hrs)`;
   document.body.appendChild(final);
 });
 
